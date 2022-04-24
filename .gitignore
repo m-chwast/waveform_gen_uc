@@ -1,0 +1,5 @@
+Debug/
+Debug/*
+Release/
+Release/*
+waveform_gen\ Debug.launch
