@@ -20,11 +20,18 @@ class uart_class
 		std::vector<uint8_t> * current_transmission;
 		std::array<uint8_t, UART_BUFFER_SIZE> in_buffer;
 		uint16_t in_buffer_elem_count;
+		bool abort;
+
 		void start_transmission();
 	public:
 		uart_class();
 		void init();
 		void init(uint bytes_no);
+		void start_timeout();
+		void stop_timeout();
+		void abort_reception();
+		bool abort_rx_status() {return abort;}
+		void abort_reset() {abort = false;}
 		void send(std::string text);
 		void send(char character);
 		void send(uint8_t * data, uint16_t size);

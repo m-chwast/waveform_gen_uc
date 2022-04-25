@@ -1,6 +1,10 @@
 #include "tim.h"
 #include  "lcd/st7920.h"
 #include "lcd/menu.h"
+#include "uart/uart.h"
+
+
+
 
 
 ///////TIM interrupt handlers:
@@ -10,7 +14,7 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)	//OC interrupt han
 {
 	if(htim == &htim2)
 	{
-		if((htim->Channel) == HAL_TIM_ACTIVE_CHANNEL_1)
+		if((htim->Channel) == HAL_TIM_ACTIVE_CHANNEL_1)	//handling lcd
 		{
 				//if(display.transaction_handler() != 0)
 				//	update_oc_register();
@@ -18,6 +22,12 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)	//OC interrupt han
 			if(display.transaction_handler() == 0)
 				display.stop_timer();
 
+		}
+		else if(htim->Channel == HAL_TIM_ACTIVE_CHANNEL_4)	//handling pc transmission timeout
+		{
+			uart.abort_reception();
+			uart.stop_timeout();
+			uart.send("TOUT\n");
 		}
 	}
 
