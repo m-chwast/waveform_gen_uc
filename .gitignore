@@ -2,4 +2,11 @@ Debug/
 Debug/*
 Release/
 Release/*
+Drivers
 waveform_gen\ Debug.launch
+.settings
+.cproject
+.project
+Core/Startup
+STM32L152RETX_FLASH.ld
+STM32L152RETX_RAM.ld
