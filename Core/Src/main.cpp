@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "dac.h"
+#include "dma.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -28,6 +29,7 @@
 #include "lcd/st7920.h"
 #include "lcd/menu.h"
 #include "uart/uart.h"
+#include "wave/waveform.h"
 #include "device.h"
 #include <string>
 /* USER CODE END Includes */
@@ -49,7 +51,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-device_state_t device_state = device_state_t::STARTUP;
+device_state_t device_state = device_state_t::IDLE;
+extern wave waveform;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -92,11 +95,14 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
+  MX_DMA_Init();
   MX_DAC_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
-  MX_TIM6_Init();
   MX_TIM7_Init();
+
+  MX_TIM9_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
 
 
@@ -119,6 +125,19 @@ int main(void)
 	HAL_Delay(1000);
 
 	uart.send("Ping!\n");
+
+	if(device_state == device_state_t::RUN && htim9.State != HAL_TIM_STATE_BUSY)
+	{
+		htim9.Instance->PSC = waveform.dac_divider - 1;
+		htim9.Instance->CNT = 0;
+		HAL_TIM_Base_Start(&htim9);
+		HAL_DAC_Start_DMA(&hdac, DAC_CHANNEL_1, (uint32_t *)&(waveform.samples[0]), waveform.sample_no, DAC_ALIGN_12B_R);
+	}
+	else if(device_state != device_state_t::RUN)
+	{
+		HAL_TIM_Base_Stop(&htim9);
+		HAL_DAC_Stop_DMA(&hdac, DAC_CHANNEL_1);
+	}
 
     /* USER CODE END WHILE */
 

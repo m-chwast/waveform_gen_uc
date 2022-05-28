@@ -65,7 +65,7 @@ class menu_class
 	public:
 		menu_class();
 
-		void init()		{menu_draw();}
+		void init()		{menu_draw(); display_values(true);}
 		void next();
 		void prev();
 		void display_values();

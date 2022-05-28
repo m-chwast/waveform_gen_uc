@@ -1,18 +1,18 @@
 #include "lcd/menu.h"
 #include "lcd/st7920.h"
+#include "device.h"
 #include <array>
 
 
-
 //////global menu object
-
 menu_class menu;
 
 
+////exported variables
+extern device_state_t device_state;
+
 
 //////menu_class functions:
-
-
 menu_class::menu_class()
 {
 	pos = 0;
@@ -21,12 +21,12 @@ menu_class::menu_class()
 	first_displayed = 0;
 	main_menu =
 	{
-		menu_item_unordered{"Run", NULL, NULL, NULL},
+		menu_item_unordered{"Run", NULL, NULL, NULL, true, 0},
 		menu_item_unordered{"Waveform", NULL, &waveform_menu},
 		menu_item_unordered{"History", NULL, NULL, NULL},
 		menu_item_unordered{"Menu2", NULL, NULL, NULL},
 		menu_item_unordered{"Settings", NULL, &settings_menu, NULL},
-		menu_item_unordered{"Menu4", NULL, NULL, NULL},
+		menu_item_unordered{"Menu3", NULL, NULL, NULL, true, 556},
 		menu_item_unordered{"USART", NULL, &usart_menu, NULL}
 	};
 
@@ -118,7 +118,7 @@ void menu_class::enter()
 		pos = 0;
 		first_displayed = 0;
 		menu_draw(menu_draw_mode::NEW);
-		display_values(true);
+		//display_values(true);
 	}
 	else if((*current_menu)[pos].parent != NULL)
 	{
@@ -148,8 +148,9 @@ void menu_class::menu_draw(menu_draw_mode mode)
 					else
 						break;
 				}
+				display_values(true);
 			}
-			/*else	////TODO
+			/*else	////done in different way
 			{
 				uint pos_delta = menu_size - pos;
 				if(pos_delta >= 3)
@@ -185,6 +186,7 @@ void menu_class::menu_draw(menu_draw_mode mode)
 				display.write("->" + (*current_menu)[pos].name, 3);
 				for(uint i = 0; i < 3; i++)
 					display.write((*current_menu)[first_displayed + i].name, i, 2);
+				display_values(true);
 			}
 			break;
 		}
@@ -217,6 +219,7 @@ void menu_class::menu_draw(menu_draw_mode mode)
 						for(int i = 0; i < 3; i++)
 							display.write((*current_menu)[first_displayed + i].name, i, 2);
 						display.write("->" + (*current_menu)[pos].name, 3);
+						display_values(true);
 					}
 				}
 			}
@@ -229,6 +232,7 @@ void menu_class::menu_draw(menu_draw_mode mode)
 					display.write("->" + (*current_menu)[first_displayed].name);
 					for(int i = 1; i < 4; i++)
 						display.write((*current_menu)[first_displayed + i].name, i, 2);
+					display_values(true);
 				}
 			}
 			break;
@@ -290,13 +294,35 @@ void menu_class::display_values(bool force_display)
 			if((*current_menu)[first_displayed + i].value != displayed_values[i] || force_display == true)
 			{
 				displayed_values[i] = (*current_menu)[first_displayed + i].value;
-				switch((int)current_menu)
+				/*switch((int)current_menu)
 				{
-					default:
+					case &main_menu:
 					{
-						display.write(to_string(displayed_values[i]), i, 10);
+
 						break;
 					}
+					default:
+					{
+						string value_str = to_string(displayed_values[i]);
+						while(value_str.length() < 6)
+							value_str += " ";
+						display.write(value_str, i, 10);
+						break;
+					}
+				}*/
+				if(&(*current_menu)[first_displayed + i] == &main_menu[0])
+				{
+					if(main_menu[0].value == 1)
+						display.write("on ", i, 10);
+					else
+						display.write("off", i, 10);
+				}
+				else
+				{
+					string value_str = to_string(displayed_values[i]);
+					while(value_str.length() < 6)
+						value_str += " ";
+					display.write(value_str, i, 10);
 				}
 			}
 		}
@@ -305,12 +331,29 @@ void menu_class::display_values(bool force_display)
 
 void menu_class::change_value(bool change_right)
 {
-	if(&(*current_menu)[pos] == &usart_menu[0])
+	if(&(*current_menu)[pos] == &usart_menu[0])	//baud
 	{
 		if(change_right == true)
 			(*current_menu)[pos].value+=100;
 		else
 			(*current_menu)[pos].value-=100;
+	}
+	else if(&(*current_menu)[pos] == &main_menu[0])	//run
+	{
+		if((*current_menu)[pos].value == 0)
+		{
+			if(device_state == device_state_t::IDLE)
+			{
+				(*current_menu)[pos].value = 1;
+				device_state = device_state_t::RUN;
+			}
+		}
+		else
+		{
+			(*current_menu)[pos].value = 0;
+			device_state = device_state_t::IDLE;
+		}
+
 	}
 	else
 	{
